@@ -1,8 +1,14 @@
 const OpenAI = require("openai");
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Only initialize OpenAI if API key is present
+let openai = null;
+if (process.env.OPENAI_API_KEY) {
+  openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+} else {
+  console.warn("⚠️  OPENAI_API_KEY is not set — AI replies will use fallback message.");
+}
 
 const SYSTEM_PROMPT = `You are a helpful digital marketing assistant for ${process.env.BUSINESS_NAME || "a marketing agency"}.
 Your job is to:
@@ -19,6 +25,11 @@ If you don't know something specific about the business, say you'll connect them
  * Get an AI-powered reply using OpenAI
  */
 async function getAIReply(userName, userMessage) {
+  // Fallback if OpenAI key is not configured
+  if (!openai) {
+    return `Thanks for your message! Our team will get back to you shortly. Type *hi* to go back to the main menu.`;
+  }
+
   try {
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -33,7 +44,7 @@ async function getAIReply(userName, userMessage) {
     return completion.choices[0].message.content.trim();
   } catch (error) {
     console.error("AI reply error:", error.message);
-    return "Sorry, I couldn't process that right now. Type *hi* to go back to the main menu, or we'll have a team member reach out to you shortly. 🙏";
+    return "Sorry, I couldn't process that right now. Type *hi* to go back to the main menu, or our team will reach out shortly. 🙏";
   }
 }
 
